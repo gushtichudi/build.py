@@ -1,0 +1,1 @@
+void love_bomb(bool fruity);
