@@ -119,7 +119,7 @@ class Build:
             )
             return
 
-            # -------------------------y
+            # -------------------------
 
         # do object files need dependencies?
         #   - ANSWER THAT QUESTION ON GITHUB ISSUES!
