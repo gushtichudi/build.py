@@ -1,12 +1,10 @@
-import os
 import subprocess as sp
 
-from io import TextIOWrapper
+from typing_extensions import TextIO
 from typing import Any
 from enum import Enum
 
 import sys
-from typing_extensions import TextIO
 
 class Messages:
     class Prefix(Enum):
