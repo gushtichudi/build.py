@@ -27,6 +27,16 @@ b.add_compiler_arguments(["-static", "-nostdlib", "-ggdb"])
 b.start_build()
 ```
 
+then, on the same directory, run
+```
+python3 recipe.py
+```
+
+if it gets too cumbersome, run the `./add-shell-alias.sh` that binds the alias `rcp` to your bashrc (or any other POSIX shell)
+```
+source ./add-shell.alias.sh
+```
+
 more examples can be found in [examples](./examples/)
 
 ## bugs
