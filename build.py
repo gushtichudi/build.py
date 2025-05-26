@@ -1,10 +1,12 @@
 import os
 import subprocess as sp
 
+from io import TextIOWrapper
 from typing import Any
 from enum import Enum
 
 import sys
+from typing_extensions import TextIO
 
 class Messages:
     class Prefix(Enum):
@@ -62,6 +64,15 @@ class Build:
         self.stderr = open(filename, 'a')
         self.stderr_changed = True
 
+    @staticmethod
+    def repurpose_stderr(stderr: TextIO | Any, mode: str = "a") -> Any:
+        if type(stderr) == str:
+            return open(stderr, mode)
+
+        if not stderr.closed:
+            stderr.close()
+            return open(stderr.name, mode)
+
     def override_default_compiler(self, compiler_name: str) -> None:
         self.compiler = compiler_name
 
@@ -110,7 +121,7 @@ class Build:
             )
             return
 
-            # -------------------------
+            # -------------------------y
 
         # do object files need dependencies?
         #   - ANSWER THAT QUESTION ON GITHUB ISSUES!
@@ -144,9 +155,9 @@ class Build:
         for task_queues in reversed(self.task_queue):
             cleaned_command_line = list(filter(None, self.task_queue[task_queues]))
 
-            self.message.put_message(Messages.Prefix.CompilerMessage, f"Uncut command line: {self.task_queue[task_queues]}")
-            self.message.put_message(Messages.Prefix.CompilerMessage, " ".join(self.task_queue[task_queues]))
-            self.message.put_message(Messages.Prefix.CompilerMessage, f"Cut command line: {cleaned_command_line}")
+            # self.message.put_message(Messages.Prefix.CompilerMessage, f"Uncut command line: {self.task_queue[task_queues]}")
+            self.message.put_message(Messages.Prefix.CompilerMessage, " ".join(cleaned_command_line))
+            # self.message.put_message(Messages.Prefix.CompilerMessage, f"Cut command line: {cleaned_command_line}")
 
             process = sp.Popen(
                 cleaned_command_line, stdout=sp.PIPE, stderr=self.stderr
@@ -155,23 +166,27 @@ class Build:
             # wait for process so we get return code
             process.wait()
 
-            # if compilation fails, also get error codes
-            out, err = process.communicate()
-
             if process.returncode != 0:
+                # btw, we still have to read from self.stderr...
                 if not self.stderr_changed:
                     self.message.put_message(Messages.Prefix.CompilerError, "Compilation failed!")
 
-                    if err == None:
-                        self.message.put_message(Messages.Prefix.Meta, "Cannot fetch error message")
+                    # close and reopen self.stderr for reading instead
+                    self.stderr = Build.repurpose_stderr(self.stderr, 'r')
+                    self.message.put_message(Messages.Prefix.CompilerError, self.stderr.read())
+                    self.stderr.close()
 
                     return
 
                 self.message.put_message(Messages.Prefix.CompilerError, "Compilation failed!")
-                self.message.put_message(Messages.Prefix.CompilerError, self.stderr.read())
+
+                # close and reopen self.stderr for reading instead
+                self.stderr = Build.repurpose_stderr(self.stderr, 'r')
+                self.message.put_message(Messages.Prefix.Meta, f"NOTE: you redirected stderr to {self.stderr.name}")
                 self.stderr.close()
 
                 return
 
-            self.message.put_message(Messages.Prefix.Meta, f"---- Compilation finished for task queue {task_queues} ----")
             continue
+
+        self.message.put_message(Messages.Prefix.Meta, "---- Compilation finished ----")
