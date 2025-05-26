@@ -30,9 +30,10 @@ b.start_build()
 more examples can be found in [examples](./examples/)
 
 ## bugs
-  - (line 117): multiple file builds cannot be possible yet.
+  - ~~(line 117): multiple file builds cannot be possible yet.~~
+    + fixed as of may 26, 2025 - 10:42 pm
   - (line  87): when add_file()'s first parameter is put as a string, it will split the string into characters (lol)
 
 ## license
-since this is not really a serious project of mine, i wouldn't fancy giving a license to this and as such, it's
+since this is not really a serious project of mine, i wouldn't fancy giving a license to this and so, it's
 basically in the Public Domain.

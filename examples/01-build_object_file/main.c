@@ -1,8 +1,8 @@
-#include <stdio.h>
+#include <stdbool.h>
 #include "less.h"
 
 int main() {
-    love_bomb();
+    love_bomb(false);
 
     return 0;
 }

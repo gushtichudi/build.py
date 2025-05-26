@@ -51,6 +51,7 @@ class Build:
         self.global_cc_flags: list = []   # every file has it
 
         self.task_queue: dict = {}
+        self.task_queue_index: int = 0
 
         self.message = Messages()
         self.stderr = sys.stderr
@@ -73,10 +74,8 @@ class Build:
             self.global_cc_flags.append(argument)
 
     def add_task_queue(self, arguments: list) -> None:
-        idx: int = 0
-
-        self.task_queue[str(idx)] = arguments
-        idx += 1
+        self.task_queue[str(self.task_queue_index)] = arguments
+        self.task_queue_index += 1
 
     def add_file(self, file: str | list, dependencies: str | list | None = None, **kwargs) -> None:
         if not dependencies:
@@ -87,6 +86,18 @@ class Build:
             # BUG: when add_file()'s first parameter is put as a string,
             #      it will split the string into characters (lol)
             # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+            if not self.global_cc_flags and not dependencies:
+                self.add_task_queue(
+                    [
+                        self.compiler,
+                        "-o",
+                        self.program_name,
+                        " ".join(file),
+                    ]
+                )
+                return
+
             self.add_task_queue(
                 [
                     self.compiler,
@@ -94,6 +105,22 @@ class Build:
                     self.program_name,
                     " ".join(file),
                     " ".join(self.global_cc_flags),
+                    dependencies
+                ]
+            )
+            return
+
+            # -------------------------
+
+        # do object files need dependencies?
+        #   - ANSWER THAT QUESTION ON GITHUB ISSUES!
+
+        if not self.global_cc_flags:
+            self.add_task_queue(
+                [
+                    self.compiler,
+                    "-c",
+                    " ".join(file),
                 ]
             )
             return
@@ -103,8 +130,6 @@ class Build:
                 self.compiler,
                 "-c",
                 " ".join(file),
-                "-o",
-                " ".join(file).split('.')[0],
                 " ".join(self.global_cc_flags)
             ]
         )
@@ -114,7 +139,8 @@ class Build:
 
     # TODO: time-based building so we don't rebuild the entire thing
     def start_build(self):
-        # BUG: multiple file builds cannot be possible yet.
+        # ~~BUG: multiple file builds cannot be possible yet.~~
+        #   - FIXED! (may 26, 2025 - 10:42 pm)
         for task_queues in reversed(self.task_queue):
             cleaned_command_line = list(filter(None, self.task_queue[task_queues]))
 

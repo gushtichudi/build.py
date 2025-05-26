@@ -11,5 +11,4 @@ void love_bomb(bool fruity) {
         return;
 
     printf("OMG ASADJDAJGFMN %s I FUCKING LVE YOU SO CAMKCFSJKMC,AVD NBN NBN B\n", user);
-    return;
 }
