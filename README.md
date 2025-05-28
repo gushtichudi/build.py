@@ -9,7 +9,7 @@ it's partly inspired by tsoding's `nob`.
 > this is yet very far from being an actual proper build system.
 
 ## usage
-`build.py` is written to not depend on a motherlode of other Python files
+`build.py` is written to not depend on a whole bunch of other Python files
 (like my other (unfinished) [projects](https://www.github.com/gushtichudi/Barrels), please don't check the
 rest of my GitHub).
 
