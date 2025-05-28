@@ -1,5 +1,5 @@
 # build.py
-build.py is an experimental build system entirely written in Python.
+build.py is an experimental build system for C/C++ entirely written in Python.
 
 it's partly inspired by tsoding's `nob`.
 

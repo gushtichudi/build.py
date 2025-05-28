@@ -44,6 +44,11 @@ class Messages:
                     file.write(f"[EE] {msg}\n")
                     return
 
+class BinaryType(Enum):
+    Program = 0
+    Object  = 1
+    SharedObject = 2
+
 class Build:
     def __init__(self, program_name):
         self.program_name = program_name
@@ -59,7 +64,7 @@ class Build:
 
     def redirect_stderr(self, filename) -> None:
         self.message.put_message(Messages.Prefix.Meta, f"Redirecting stderr to {filename}")
-        self.stderr = open(filename, 'a')
+        self.stderr = open(filename, 'w')
         self.stderr_changed = True
 
     @staticmethod
@@ -70,6 +75,32 @@ class Build:
         if not stderr.closed:
             stderr.close()
             return open(stderr.name, mode)
+
+    @staticmethod
+    def get_right_file_extension() -> str | None:
+        match sys.platform:
+            # ELF
+            case 'linux': return '.so'
+            case 'freebsd': return '.so'
+            # PE
+            case 'win32': return '.dll'
+            case 'cygwin': return '.dll'
+            # MACH-O
+            case 'darwin': return '.dylib'
+
+            # NOTHING ELSE...
+            case _:
+                raise OSError("I don't know what are you using. Please tell me what you are using in GitHub Issues(TM).")
+
+    @staticmethod
+    def clean_command_line(command_line: list) -> list:
+        command_line = list(filter(None, command_line))
+
+        for (idx, arguments) in enumerate(command_line):
+            if type(arguments) == list and len(arguments) < 2:
+                command_line[idx] = str(command_line[idx])
+
+        return command_line
 
     def override_default_compiler(self, compiler_name: str) -> None:
         self.compiler = compiler_name
@@ -86,75 +117,88 @@ class Build:
         self.task_queue[str(self.task_queue_index)] = arguments
         self.task_queue_index += 1
 
-    def add_file(self, file: str | list, dependencies: str | list | None = None, **kwargs) -> None:
+    def add_file(
+        self, 
+        file: str | list, 
+        dependencies: str | list | None = None, 
+        is_what: BinaryType | None = None
+    ) -> None:
         if not dependencies:
             dependencies = ""
 
-        if not kwargs["is_object"]:
+        match is_what:
+            case BinaryType.Program:
+                for files in file:
+                    self.add_task_queue(
+                        list(
+                            [
+                                self.compiler,
+                                "-o",
+                                self.program_name,
+                                files,
+                                " ".join(self.global_cc_flags)
+                            ] + list(dependencies)
+                        )
+                    )
 
-            # BUG: when add_file()'s first parameter is put as a string,
-            #      it will split the string into characters (lol)
-            # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+            case BinaryType.Object:
+                for files in file:
+                    self.add_task_queue(
+                        list(
+                            [
+                                self.compiler,
+                                "-c",
+                                files,
+                                "-o",
+                                str(files.split('.')[0]) + str('.o'),
+                                " ".join(self.global_cc_flags)
+                            ] + list(dependencies)
+                        )
+                    )
 
-            if not self.global_cc_flags and not dependencies:
-                self.add_task_queue(
-                    [
-                        self.compiler,
-                        "-o",
-                        self.program_name,
-                        " ".join(file),
-                    ]
-                )
-                return
+            case BinaryType.SharedObject:
+                shared_object_file_extension = Build.get_right_file_extension()
+                
+                for files in file:
+                    self.add_task_queue(
+                        list(
+                            [
+                                self.compiler,
+                                "-shared",
+                                files,
+                                "-o",
+                                str(files.split('.')[0]) + str(shared_object_file_extension),
+                                " ".join(self.global_cc_flags),
+                            
+                            ] + list(dependencies)
+                        )
+                    )
 
-            self.add_task_queue(
-                [
-                    self.compiler,
-                    "-o",
-                    self.program_name,
-                    " ".join(file),
-                    " ".join(self.global_cc_flags),
-                    dependencies
-                ]
-            )
-            return
-
-            # -------------------------
-
-        # do object files need dependencies?
-        #   - ANSWER THAT QUESTION ON GITHUB ISSUES!
-
-        if not self.global_cc_flags:
-            self.add_task_queue(
-                [
-                    self.compiler,
-                    "-c",
-                    " ".join(file),
-                ]
-            )
-            return
-
-        self.add_task_queue(
-            [
-                self.compiler,
-                "-c",
-                " ".join(file),
-                " ".join(self.global_cc_flags)
-            ]
-        )
+            case _:
+                raise Exception("Invalid Binary Type: {}".format(repr(is_what)))
 
     def add_resource(self, resource_intepreter: str, resource_intepreter_arguments: list) -> None:
         self.add_task_queue([resource_intepreter, resource_intepreter_arguments])
 
     # TODO: time-based building so we don't rebuild the entire thing
     def start_build(self):
-        # ~~BUG: multiple file builds cannot be possible yet.~~
-        #   - FIXED! (may 26, 2025 - 10:42 pm)
         for task_queues in reversed(self.task_queue):
-            cleaned_command_line = list(filter(None, self.task_queue[task_queues]))
+
+            cleaned_command_line = Build.clean_command_line(self.task_queue[task_queues])
 
             # self.message.put_message(Messages.Prefix.CompilerMessage, f"Uncut command line: {self.task_queue[task_queues]}")
-            self.message.put_message(Messages.Prefix.CompilerMessage, " ".join(cleaned_command_line))
+            try:
+                self.message.put_message(Messages.Prefix.CompilerMessage, 
+                "{} >> {}".format(task_queues, " ".join(cleaned_command_line)))
+            except TypeError as e:
+                self.message.put_message(Messages.Prefix.Meta, 
+                    "ERROR while trying to represent command-line: `{}`".format(e))
+
+                self.message.put_message(Messages.Prefix.Meta, 
+                "    + info: `cleaned_command_line` == {}".format(cleaned_command_line))
+
+                exit(-1)
+
             # self.message.put_message(Messages.Prefix.CompilerMessage, f"Cut command line: {cleaned_command_line}")
 
             process = sp.Popen(
@@ -180,7 +224,6 @@ class Build:
 
                 # close and reopen self.stderr for reading instead
                 self.stderr = Build.repurpose_stderr(self.stderr, 'r')
-                self.message.put_message(Messages.Prefix.Meta, f"NOTE: you redirected stderr to {self.stderr.name}")
                 self.stderr.close()
 
                 return
