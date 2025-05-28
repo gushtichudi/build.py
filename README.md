@@ -18,10 +18,11 @@ to use `build.py` in a project, copy `build.py`, and write a `recipe.py` by `imp
 a very small example is provided here.
 ```py
 from build import Build
+from build import BinaryType as bt
 
 b = Build("program-name")
 
-b.add_file(["main.c"])
+b.add_file(["main.c"], None, bt.Program)
 b.add_compiler_arguments(["-static", "-nostdlib", "-ggdb"])
 
 b.start_build()
