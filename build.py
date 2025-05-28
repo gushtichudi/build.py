@@ -189,7 +189,7 @@ class Build:
             # self.message.put_message(Messages.Prefix.CompilerMessage, f"Uncut command line: {self.task_queue[task_queues]}")
             try:
                 self.message.put_message(Messages.Prefix.CompilerMessage, 
-                "{} >> {}".format(task_queues, " ".join(cleaned_command_line)))
+                "queue:{} >> {}".format(task_queues, " ".join(cleaned_command_line)))
             except TypeError as e:
                 self.message.put_message(Messages.Prefix.Meta, 
                     "ERROR while trying to represent command-line: `{}`".format(e))
