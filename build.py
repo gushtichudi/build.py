@@ -92,16 +92,6 @@ class Build:
             case _:
                 raise OSError("I don't know what are you using. Please tell me what you are using in GitHub Issues(TM).")
 
-    @staticmethod
-    def clean_command_line(command_line: list) -> list:
-        command_line = list(filter(None, command_line))
-
-        for (idx, arguments) in enumerate(command_line):
-            if type(arguments) == list and len(arguments) < 2:
-                command_line[idx] = str(command_line[idx])
-
-        return command_line
-
     def override_default_compiler(self, compiler_name: str) -> None:
         self.compiler = compiler_name
 
@@ -136,8 +126,7 @@ class Build:
                                 "-o",
                                 self.program_name,
                                 files,
-                                " ".join(self.global_cc_flags)
-                            ] + list(dependencies)
+                            ] + list(dependencies) + list(self.global_cc_flags)
                         )
                     )
 
@@ -151,8 +140,7 @@ class Build:
                                 files,
                                 "-o",
                                 str(files.split('.')[0]) + str('.o'),
-                                " ".join(self.global_cc_flags)
-                            ] + list(dependencies)
+                            ] + list(dependencies) + list(self.global_cc_flags)
                         )
                     )
 
@@ -168,9 +156,7 @@ class Build:
                                 files,
                                 "-o",
                                 str(files.split('.')[0]) + str(shared_object_file_extension),
-                                " ".join(self.global_cc_flags),
-                            
-                            ] + list(dependencies)
+                            ] + list(dependencies) + list(self.global_cc_flags)
                         )
                     )
 
@@ -183,13 +169,12 @@ class Build:
     # TODO: time-based building so we don't rebuild the entire thing
     def start_build(self):
         for task_queues in reversed(self.task_queue):
-
-            cleaned_command_line = Build.clean_command_line(self.task_queue[task_queues])
+            command_line = self.task_queue[task_queues]
 
             # self.message.put_message(Messages.Prefix.CompilerMessage, f"Uncut command line: {self.task_queue[task_queues]}")
             try:
                 self.message.put_message(Messages.Prefix.CompilerMessage, 
-                "queue:{} >> {}".format(task_queues, " ".join(cleaned_command_line)))
+                "queue:{} >> {}".format(task_queues, " ".join(command_line)))
             except TypeError as e:
                 self.message.put_message(Messages.Prefix.Meta, 
                     "ERROR while trying to represent command-line: `{}`".format(e))
@@ -202,7 +187,7 @@ class Build:
             # self.message.put_message(Messages.Prefix.CompilerMessage, f"Cut command line: {cleaned_command_line}")
 
             process = sp.Popen(
-                cleaned_command_line, stdout=sp.PIPE, stderr=self.stderr
+                command_line, stdout=sp.PIPE, stderr=self.stderr
             )
 
             # wait for process so we get return code
