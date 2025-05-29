@@ -170,8 +170,6 @@ class Build:
     def start_build(self):
         for task_queues in reversed(self.task_queue):
             command_line = self.task_queue[task_queues]
-
-            # self.message.put_message(Messages.Prefix.CompilerMessage, f"Uncut command line: {self.task_queue[task_queues]}")
             try:
                 self.message.put_message(Messages.Prefix.CompilerMessage, 
                 "queue:{} >> {}".format(task_queues, " ".join(command_line)))
@@ -183,8 +181,6 @@ class Build:
                 "    + info: `cleaned_command_line` == {}".format(cleaned_command_line))
 
                 exit(-1)
-
-            # self.message.put_message(Messages.Prefix.CompilerMessage, f"Cut command line: {cleaned_command_line}")
 
             process = sp.Popen(
                 command_line, stdout=sp.PIPE, stderr=self.stderr
