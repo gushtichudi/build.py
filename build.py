@@ -108,9 +108,9 @@ class Build:
         self.task_queue_index += 1
 
     def add_file(
-        self, 
-        file: str | list, 
-        dependencies: str | list | None = None, 
+        self,
+        file: str | list,
+        dependencies: str | list | None = None,
         is_what: BinaryType | None = None
     ) -> None:
         if not dependencies:
@@ -146,7 +146,7 @@ class Build:
 
             case BinaryType.SharedObject:
                 shared_object_file_extension = Build.get_right_file_extension()
-                
+
                 for files in file:
                     self.add_task_queue(
                         list(
@@ -171,13 +171,13 @@ class Build:
         for task_queues in reversed(self.task_queue):
             command_line = self.task_queue[task_queues]
             try:
-                self.message.put_message(Messages.Prefix.CompilerMessage, 
+                self.message.put_message(Messages.Prefix.CompilerMessage,
                 "queue:{} >> {}".format(task_queues, " ".join(command_line)))
             except TypeError as e:
-                self.message.put_message(Messages.Prefix.Meta, 
+                self.message.put_message(Messages.Prefix.Meta,
                     "ERROR while trying to represent command-line: `{}`".format(e))
 
-                self.message.put_message(Messages.Prefix.Meta, 
+                self.message.put_message(Messages.Prefix.Meta,
                 "    + info: `cleaned_command_line` == {}".format(cleaned_command_line))
 
                 exit(-1)
