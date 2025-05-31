@@ -194,11 +194,6 @@ class Build:
                 if not self.stderr_changed:
                     self.message.put_message(Messages.Prefix.CompilerError, "Compilation failed!")
 
-                    # close and reopen self.stderr for reading instead
-                    self.stderr = Build.repurpose_stderr(self.stderr, 'r')
-                    self.message.put_message(Messages.Prefix.CompilerError, self.stderr.read())
-                    self.stderr.close()
-
                     return
 
                 self.message.put_message(Messages.Prefix.CompilerError, "Compilation failed!")
