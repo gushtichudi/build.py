@@ -177,9 +177,6 @@ class Build:
                 self.message.put_message(Messages.Prefix.Meta,
                     "ERROR while trying to represent command-line: `{}`".format(e))
 
-                self.message.put_message(Messages.Prefix.Meta,
-                "    + info: `cleaned_command_line` == {}".format(cleaned_command_line))
-
                 exit(-1)
 
             process = sp.Popen(
