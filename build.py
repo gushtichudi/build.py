@@ -92,6 +92,13 @@ class Build:
             case _:
                 raise OSError("I don't know what are you using. Please tell me what you are using in GitHub Issues(TM).")
 
+    def yield_objname(self, objname: str) -> str:
+        if "." in objname:
+            j = objname.split(".")
+            return str(j[0]) + str(Build.get_right_file_extension())
+
+        return objname + Build.get_right_file_extension()
+
     def override_default_compiler(self, compiler_name: str) -> None:
         self.compiler = compiler_name
 
